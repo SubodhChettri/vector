@@ -38,6 +38,22 @@ where
     LegacyEncodingConfig(LegacyEncodingConfigWrapper<LegacyEncodingConfig, Migrator>),
 }
 
+impl<LegacyEncodingConfig, Migrator> From<LegacyEncodingConfig>
+    for EncodingConfigAdapter<LegacyEncodingConfig, Migrator>
+where
+    LegacyEncodingConfig: EncodingConfiguration + Debug + Clone + 'static,
+    Migrator: EncodingConfigMigrator<Codec = <LegacyEncodingConfig as EncodingConfiguration>::Codec>
+        + Debug
+        + Clone,
+{
+    fn from(encoding: LegacyEncodingConfig) -> Self {
+        Self::LegacyEncodingConfig(LegacyEncodingConfigWrapper {
+            encoding,
+            phantom: PhantomData,
+        })
+    }
+}
+
 impl<LegacyEncodingConfig, Migrator> EncodingConfigAdapter<LegacyEncodingConfig, Migrator>
 where
     LegacyEncodingConfig: EncodingConfiguration + Debug + Clone + 'static,
@@ -185,6 +201,8 @@ pub struct ExceptFieldsConfig {
     except_fields: Vec<String>,
 }
 
+#[derive(Debug, Clone, Default)]
+/// Transformations to prepare an event for serialization.
 pub struct Transformer {
     only_fields: Option<Vec<Vec<PathComponent<'static>>>>,
     except_fields: Option<Vec<String>>,
@@ -192,6 +210,7 @@ pub struct Transformer {
 }
 
 impl Transformer {
+    /// Prepare an event for serialization by the given transformation rules.
     pub fn transform(&self, event: &mut Event) {
         self.apply_rules(event);
     }
